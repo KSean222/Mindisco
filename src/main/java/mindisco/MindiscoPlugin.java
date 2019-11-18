@@ -7,54 +7,37 @@ import io.anuke.arc.util.*;
 import io.anuke.mindustry.*;
 import io.anuke.mindustry.entities.type.*;
 import io.anuke.mindustry.game.EventType.*;
-import io.anuke.mindustry.gen.*;
-import io.anuke.mindustry.net.Administration;
+import io.anuke.mindustry.game.Team;
+import io.anuke.mindustry.gen.Call;
 import io.anuke.mindustry.plugin.Plugin;
-
-import java.util.HashMap;
-import java.util.UUID;
+import mindisco.DiscordVerifier.DiscordVerifier;
 
 public class MindiscoPlugin extends Plugin{
 
-    private HashMap<String, TimedValue<Long>> verificationUUIDs;
-    private HashMap<String, Long> discordAccounts;
-
-
+    private DiscordVerifier verifier;
     public MindiscoPlugin(){
-        final String token = Core.settings.getDataDirectory().child("mods/mindisco.token").readString();
+        verifier = new DiscordVerifier();
 
-        verificationUUIDs = new HashMap<>();
-        discordAccounts = new HashMap<>();
         Events.on(PlayerConnect.class, event -> {
-            Long discordAccountID = discordAccounts.get(event.player.getInfo().id);
-            if (discordAccountID != null) {
-
-                return;
+            Long discordAccountID = verifier.getDiscord(event.player.getInfo().lastIP);
+            if (discordAccountID == null) {
+                event.player.setTeam(Team.derelict);
+                event.player.kill();
+                event.player.sendMessage("Looks like you're not verified. Get a verify code and verify yourself using /verify to continue!");
             }
-            TimedValue timedValue = verificationUUIDs.get(event.player.name);
-            if (timedValue == null) {
-                Log.info(event.player.getInfo().id + " doesn't have a valid verification code.");
-                Call.onKick(event.player.con, "Please get a verification code first!");
-                return;
-            }
-            verificationUUIDs.remove(event.player.name);
-            if (timedValue.expired()) {
-                Log.info(event.player.getInfo().id + " has an expired verification code.");
-                Call.onKick(event.player.con, "This code has expired!");
-                return;
-            }
-            discordAccounts.put(event.player.getInfo().id, (Long)timedValue.data);
-            Log.info("Verified " + event.player.getInfo().id + " as " + timedValue.data + ".");
-            Call.onKick(event.player.con, "Account verified! You can now join this server.");
         });
-        Catnip.catnipAsync(token).thenAccept(catnip -> {
+        Catnip.catnipAsync(Constants.mindiscoBotToken).thenAccept(catnip -> {
             catnip.on(DiscordEvent.MESSAGE_CREATE, msg -> {
                 if(msg.author().bot()) return;
                 if(msg.content().equals("+md verify")) {
                     msg.author().createDM().thenAcceptAsync(dm -> {
-                        String uuid = java.util.UUID.randomUUID().toString();
-                        verificationUUIDs.put(uuid, new TimedValue<>(msg.author().idAsLong(), 1000 * 60 * 5));
-                        dm.sendMessage("Code: `" + uuid + "`\nUse this as your username when joining the server.\nHurry, it expires in a minute!");
+                        long authorID = msg.author().idAsLong();
+                        if(verifier.isBanned(authorID)) {
+                            dm.sendMessage(Constants.discordBanMessage);
+                        } else {
+                            String uuid = verifier.createVerifyToken(authorID, 1000 * 60 * 5);
+                            dm.sendMessage("Code: `/verify " + uuid + "`\nRun this command when joining the server.\nHurry, it expires in 5 minutes!");
+                        }
                     });
                 }
             });
@@ -66,8 +49,8 @@ public class MindiscoPlugin extends Plugin{
     @Override
     public void registerServerCommands(CommandHandler handler){
         handler.register("forceverify", "<text...>", "Force verify a player ID", args -> {
-            discordAccounts.put(args[0], Long.MIN_VALUE);
-            Log.info("Force verified " + args[0] + ".");
+            verifier.forceVerifyIP(args[0]);
+            Log.info("Force verified ip " + args[0] + ".");
         });
     }
 
@@ -89,6 +72,25 @@ public class MindiscoPlugin extends Plugin{
 
             //send the other player a message, using [lightgray] for gray text color and [] to reset color
             //player.sendMessage("[lightgray](whisper) " + player.name + ":[] " + args[1]);
+        });
+
+        handler.<Player>register(Constants.verificationCommandName, Constants.verificationCommandArgs, Constants.verificationCommandDescription, (args, player) -> {
+            String ip = player.getInfo().lastIP;
+            if (verifier.getDiscord(ip) != null) {
+                player.sendMessage(Constants.verificationAlreadyVerified);
+                return;
+            }
+            switch (verifier.tryVerifyIP(ip, args[0])) {
+                case INVALID:
+                    player.sendMessage(Constants.verificationInvalidCode);
+                    break;
+                case EXPIRED:
+                    player.sendMessage(Constants.verificationExpiredCode);
+                    break;
+                case SUCCESS:
+                    Call.onKick(player.con, Constants.verificationSuccessMessage);
+                    break;
+            }
         });
     }
 }
