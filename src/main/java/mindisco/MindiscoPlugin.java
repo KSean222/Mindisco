@@ -20,7 +20,7 @@ public class MindiscoPlugin extends Plugin{
         verifier = new DiscordVerifier();
 
         Events.on(PlayerConnect.class, event -> {
-            Long discordAccountID = verifier.getDiscord(event.player.uuid + " " + event.player.usid);
+            Long discordAccountID = verifier.getDiscord(getUUIDUSID(event.player));
             if (discordAccountID == null) {
                 event.player.setTeam(Team.derelict);
                 event.player.kill();
@@ -60,23 +60,17 @@ public class MindiscoPlugin extends Plugin{
     public void registerClientCommands(CommandHandler handler){
 
         //register a whisper command which can be used to send other players messages
-        handler.<Player>register("getdiscord", "<player>", "Whisper text to another player.", (args, player) -> {
-            //find player by nam
-
-            Player other = Vars.playerGroup.all().find(p -> p.name.equalsIgnoreCase(args[0]));
-
-            //give error message with scarlet-colored text if player isn't found
+        handler.<Player>register("get-discord", "<player>", "Whisper text to another player.", (args, player) -> {
+            Player other = Vars.playerGroup.all().find(p -> p.name.equals(args[0]));
             if(other == null){
-                player.sendMessage("[scarlet]No player by that name found!");
-                return;
+                player.sendMessage(String.format(Constants.playerNotFound, args[0]));
+            } else {
+                player.sendMessage(other.name + "'s discord ID: " + getUUIDUSID(other));
             }
-
-            //send the other player a message, using [lightgray] for gray text color and [] to reset color
-            //player.sendMessage("[lightgray](whisper) " + player.name + ":[] " + args[1]);
         });
 
-        handler.<Player>register(Constants.verificationCommandName, Constants.verificationCommandArgs, Constants.verificationCommandDescription, (args, player) -> {
-            String uuidUSID = player.uuid + " " + player.usid;
+        handler.<Player>register("verify", "<code>", "Command to verify yourself.", (args, player) -> {
+            String uuidUSID = getUUIDUSID(player);
             if (verifier.getDiscord(uuidUSID) != null) {
                 player.sendMessage(Constants.verificationAlreadyVerified);
                 return;
@@ -93,5 +87,8 @@ public class MindiscoPlugin extends Plugin{
                     break;
             }
         });
+    }
+    private String getUUIDUSID(Player player){
+        return player.uuid + " " + player.usid;
     }
 }

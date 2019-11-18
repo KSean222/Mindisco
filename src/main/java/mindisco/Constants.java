@@ -13,10 +13,8 @@ public class Constants {
     public static final String verificationInvalidCode = "This code is invalid!";
     public static final String verificationExpiredCode = "This code has expired!";
     public static final String verificationSuccessMessage = "Successfully verified! Re-join to play.";
-    public static final String verificationCommandDescription = "Command to verify yourself.";
+    public static final String playerNotFound = "[scarlet]Player %s was not found!";
 
     public static final Json jsonInstance = new Json();
     public static final FileHandle mindiscoBanFile = Core.settings.getDataDirectory().child(Constants.mindiscoRoot + "bans.json");
-    public static final String verificationCommandName = "verify";
-    public static final String verificationCommandArgs = "<code>";
 }
