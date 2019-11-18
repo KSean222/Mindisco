@@ -65,7 +65,7 @@ public class MindiscoPlugin extends Plugin{
             if(other == null){
                 player.sendMessage(String.format(Constants.playerNotFound, args[0]));
             } else {
-                player.sendMessage(other.name + "'s discord ID: " + getUUIDUSID(other));
+                player.sendMessage(other.name + "'s discord ID: " + verifier.getDiscord(getUUIDUSID(other)));
             }
         });
 
