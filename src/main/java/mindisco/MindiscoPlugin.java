@@ -9,6 +9,7 @@ import io.anuke.mindustry.entities.type.*;
 import io.anuke.mindustry.game.EventType.*;
 import io.anuke.mindustry.game.Team;
 import io.anuke.mindustry.gen.Call;
+import io.anuke.mindustry.net.Administration;
 import io.anuke.mindustry.plugin.Plugin;
 import mindisco.DiscordVerifier.DiscordVerifier;
 
@@ -19,7 +20,7 @@ public class MindiscoPlugin extends Plugin{
         verifier = new DiscordVerifier();
 
         Events.on(PlayerConnect.class, event -> {
-            Long discordAccountID = verifier.getDiscord(event.player.getInfo().lastIP);
+            Long discordAccountID = verifier.getDiscord(event.player.uuid + " " + event.player.usid);
             if (discordAccountID == null) {
                 event.player.setTeam(Team.derelict);
                 event.player.kill();
@@ -48,9 +49,9 @@ public class MindiscoPlugin extends Plugin{
     //register commands that run on the server
     @Override
     public void registerServerCommands(CommandHandler handler){
-        handler.register("forceverify", "<text...>", "Force verify a player ID", args -> {
-            verifier.forceVerifyIP(args[0]);
-            Log.info("Force verified ip " + args[0] + ".");
+        handler.register("forceverify", "<uuid-usid...>", "Force verify a player ID", args -> {
+            verifier.forceVerifyUUIDUUSID(args[0]);
+            Log.info("Force verified " + args[0] + ".");
         });
     }
 
@@ -75,12 +76,12 @@ public class MindiscoPlugin extends Plugin{
         });
 
         handler.<Player>register(Constants.verificationCommandName, Constants.verificationCommandArgs, Constants.verificationCommandDescription, (args, player) -> {
-            String ip = player.getInfo().lastIP;
-            if (verifier.getDiscord(ip) != null) {
+            String uuidUSID = player.uuid + " " + player.usid;
+            if (verifier.getDiscord(uuidUSID) != null) {
                 player.sendMessage(Constants.verificationAlreadyVerified);
                 return;
             }
-            switch (verifier.tryVerifyIP(ip, args[0])) {
+            switch (verifier.tryVerifyUUIDUUSID(uuidUSID, args[0])) {
                 case INVALID:
                     player.sendMessage(Constants.verificationInvalidCode);
                     break;

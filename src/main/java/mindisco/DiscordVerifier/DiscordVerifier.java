@@ -14,12 +14,17 @@ public class DiscordVerifier {
     public DiscordVerifier(){
         verificationUUIDs = new HashMap<>();
         discordAccounts = new HashMap<>();
-        banlist = Constants.jsonInstance.fromJson(BanList.class, Constants.mindiscoBanFile.readString());
+        if(Constants.mindiscoBanFile.exists()){
+            banlist = Constants.jsonInstance.fromJson(BanList.class, Constants.mindiscoBanFile.readString());
+        } else {
+            banlist = new BanList();
+            updateBanFile();
+        }
     }
-    public Long getDiscord(String ip) {
-        return discordAccounts.get(ip);
+    public Long getDiscord(String uuidUUSID) {
+        return discordAccounts.get(uuidUUSID);
     }
-    public VerifyState tryVerifyIP(String ip, String uuid) {
+    public VerifyState tryVerifyUUIDUUSID(String uuidUUSID, String uuid) {
         TimedValue<Long> value = verificationUUIDs.get(uuid);
         if (value == null) {
             return VerifyState.INVALID;
@@ -28,7 +33,7 @@ public class DiscordVerifier {
         if (value.expired()) {
             return VerifyState.EXPIRED;
         }
-        discordAccounts.put(ip, value.data);
+        discordAccounts.put(uuidUUSID, value.data);
         return VerifyState.SUCCESS;
     }
     public String createVerifyToken(Long account, int timeout){
@@ -36,8 +41,8 @@ public class DiscordVerifier {
         verificationUUIDs.put(uuid, new TimedValue<>(account, timeout));
         return uuid;
     }
-    public void forceVerifyIP(String ip) {
-        discordAccounts.put(ip, Long.MIN_VALUE);
+    public void forceVerifyUUIDUUSID(String uuidUUSID) {
+        discordAccounts.put(uuidUUSID, Long.MIN_VALUE);
     }
     public boolean isBanned(long discordID){
         return banlist.isBanned(discordID);
