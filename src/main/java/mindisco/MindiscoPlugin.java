@@ -69,7 +69,7 @@ public class MindiscoPlugin extends Plugin{
     public void registerClientCommands(CommandHandler handler){
 
         //register a whisper command which can be used to send other players messages
-        handler.<Player>register("get-discord", "<player>", "Whisper text to another player.", (args, player) -> {
+        handler.<Player>register("get-discord", "<player...>", "Whisper text to another player.", (args, player) -> {
             Player other = Vars.playerGroup.all().find(p -> p.name.equals(args[0]));
             if(other == null){
                 player.sendMessage(String.format(Constants.playerNotFound, args[0]));
