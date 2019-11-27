@@ -1,19 +1,18 @@
 package mindisco;
 
 import com.mewna.catnip.Catnip;
+import com.mewna.catnip.entity.user.User;
 import com.mewna.catnip.shard.DiscordEvent;
 import io.anuke.arc.*;
 import io.anuke.arc.util.*;
 import io.anuke.mindustry.*;
-import io.anuke.mindustry.core.NetServer;
 import io.anuke.mindustry.entities.type.*;
-import io.anuke.mindustry.game.EventType;
 import io.anuke.mindustry.game.EventType.*;
 import io.anuke.mindustry.game.Team;
 import io.anuke.mindustry.gen.Call;
 import io.anuke.mindustry.net.Administration;
-import io.anuke.mindustry.net.Packets;
 import io.anuke.mindustry.plugin.Plugin;
+import mindisco.DiscordVerifier.Ban.BanData;
 import mindisco.DiscordVerifier.DiscordVerifier;
 
 public class MindiscoPlugin extends Plugin{
@@ -26,11 +25,6 @@ public class MindiscoPlugin extends Plugin{
             //Log.info(getUUIDUSID(event.player));
             handlePlayerJoin(event.player);
         });
-        Events.on(PlayerLeave.class, event -> {
-            for(Administration.PlayerInfo playerInfo: Constants.administration.getBanned()){
-
-            }
-        });
         Events.on(WorldLoadEvent.class, event -> {
             for (Player player: Vars.playerGroup.all()) {
                 handlePlayerJoin(player);
@@ -38,14 +32,14 @@ public class MindiscoPlugin extends Plugin{
         });
         Catnip.catnipAsync(Constants.mindiscoBotToken).thenAccept(catnip -> {
             catnip.on(DiscordEvent.MESSAGE_CREATE, msg -> {
-                if(msg.author().bot()) return;
+                User author = msg.author();
+                if(author.bot()) return;
                 if(msg.content().equals("+md verify")) {
-                    msg.author().createDM().thenAcceptAsync(dm -> {
-                        long authorID = msg.author().idAsLong();
-                        if(verifier.isBanned(authorID)) {
+                    author.createDM().thenAcceptAsync(dm -> {
+                        if(verifier.isBanned(author)) {
                             dm.sendMessage(Constants.discordBanMessage);
                         } else {
-                            String uuid = verifier.createVerifyToken(authorID, 1000 * 60 * 5);
+                            String uuid = verifier.createVerifyToken(author, 1000 * 60 * 5);
                             dm.sendMessage("Code: `/verify " + uuid + "`\nRun this command when joining the server.\nHurry, it expires in 5 minutes!");
                         }
                     });
@@ -69,12 +63,13 @@ public class MindiscoPlugin extends Plugin{
     public void registerClientCommands(CommandHandler handler){
 
         //register a whisper command which can be used to send other players messages
-        handler.<Player>register("get-discord", "<player...>", "Whisper text to another player.", (args, player) -> {
+        handler.<Player>register("get-discord", "<player...>", "Get info about this player's discord account.", (args, player) -> {
             Player other = Vars.playerGroup.all().find(p -> p.name.equals(args[0]));
             if(other == null){
                 player.sendMessage(String.format(Constants.playerNotFound, args[0]));
             } else {
-                player.sendMessage(other.name + "'s discord ID: " + verifier.getDiscord(getUUIDUSID(other)));
+                User user = verifier.getDiscord(getUUIDUSID(other));
+                player.sendMessage(String.format(Constants.getDiscordInfoText, other.name, user.discordTag(), user.id()));
             }
         });
 
@@ -97,15 +92,19 @@ public class MindiscoPlugin extends Plugin{
             }
         });
 
-        handler.<Player>register("ban", "<code>", "Command to verify yourself.", (args, player) -> {
+        handler.<Player>register("ban-discord-id", "<discord-id> [reason]", "Ban a discord ID, preventing it from being used for future verifications.", (args, player) -> {
+            verifier.ban(new BanData(getUUIDUSID()));
         });
     }
     private String getUUIDUSID(Player player){
-        return player.uuid + " " + player.usid;
+        return getUUIDUSID(player.getInfo());
+    }
+    private String getUUIDUSID(Administration.PlayerInfo playerInfo){
+        return playerInfo.id + " " + playerInfo.adminUsid;
     }
     private void handlePlayerJoin(Player player){
-        Long discordAccountID = verifier.getDiscord(getUUIDUSID(player));
-        if (discordAccountID == null) {
+        User user = verifier.getDiscord(getUUIDUSID(player));
+        if (user == null) {
             player.setTeam(Team.derelict);
             player.kill();
             player.sendMessage("Looks like you're not verified. Get a verify code and verify yourself using /verify to continue!");

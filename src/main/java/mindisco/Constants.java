@@ -16,6 +16,7 @@ public class Constants {
     public static final String verificationSuccessMessage = "Successfully verified! Re-join to play.";
     public static final String playerNotFound = "[scarlet]Player %s was not found!";
     public static final Administration administration = new Administration();
+    public static final String getDiscordInfoText = "%s:\nDiscord name: %s\nDiscord ID: %s";
 
     public static final Json jsonInstance = new Json();
     public static final FileHandle mindiscoBanFile = Core.settings.getDataDirectory().child(Constants.mindiscoRoot + "bans.json");
