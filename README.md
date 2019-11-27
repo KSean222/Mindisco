@@ -1,15 +1,5 @@
 ### Setup
-
-Clone this repository first.
-To edit the plugin display name and other data, take a look at `src/main.resources/plugin.json`.
-Edit the name of the project itself by going into `settings.gradle`.
-
-### Basic Usage
-
-See `src/main/java/mindisco/ExamplePlugin.java` for some basic commands and event handlers.  
-Every main plugin class must extend `Plugin`. Make sure that `plugin.json` points to the correct main plugin class.
-
-Please note that the plugin system is in **early alpha**, and is subject to major changes.
+Clone this repository.
 
 ### Building a Jar
 
@@ -20,5 +10,8 @@ Output jar should be in `build/libs`.
 
 ### Installing
 
-Simply place the output jar from the step above in your server's `config/mods` directory and restart the server.
-List your currently installed plugins/mods by running the `mods` command.
+Place the output jar from the step above in your server's `config/mods` directory and restart the server.
+Create a folder called `mindisco` next to the mod.
+Add a `token.txt` file to that folder, making sure that the contents of the file is your discord bot's token.
+You can list your currently installed plugins/mods by running the `mods` command.
+
