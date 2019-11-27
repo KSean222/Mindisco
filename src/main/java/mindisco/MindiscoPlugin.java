@@ -92,8 +92,26 @@ public class MindiscoPlugin extends Plugin{
             }
         });
 
-        handler.<Player>register("ban-discord-id", "<discord-id> [reason]", "Ban a discord ID, preventing it from being used for future verifications.", (args, player) -> {
-            verifier.ban(new BanData(getUUIDUSID()));
+        handler.<Player>register("ban-discord-id", "<discord-id> [reason...]", "Ban using a discord ID, preventing it from being used for future verifications.", (args, player) -> {
+            if(!player.isAdmin){
+                player.sendMessage(Constants.playerNoPermission);
+                return;
+            }
+            String banReason = args.length > 1 ? args[1] : "(No reason provided)";
+            try{
+                long id = Long.parseLong(args[0]);
+                User banner = verifier.getDiscord(getUUIDUSID(player));
+                verifier.ban(new BanData(id, banReason, banner.discordTag() + " (" + banner.id() + ")"));
+                for(Player p: Vars.playerGroup.all()) {
+                    String uuidUSID = getUUIDUSID(p);
+                    if(verifier.isBanned(verifier.getDiscord(uuidUSID))){
+                        verifier.unverifyUUIDUUSID(uuidUSID);
+                        Call.onKick(p.con, String.format(Constants.discordBanMessage, banReason));
+                    }
+                }
+            } catch (NumberFormatException e) {
+                player.sendMessage(String.format(Constants.invalidIdArg, args[0]));
+            }
         });
     }
     private String getUUIDUSID(Player player){

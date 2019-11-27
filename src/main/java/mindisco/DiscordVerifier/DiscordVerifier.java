@@ -117,6 +117,10 @@ public class DiscordVerifier {
             }
         });
     }
+    public void unverifyUUIDUUSID(String uuidUUSID) {
+        discordAccounts.remove(uuidUUSID);
+    }
+
     public boolean isBanned(User user){
         return banlist.isBanned(user.idAsLong());
     }
